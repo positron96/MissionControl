@@ -6,12 +6,15 @@
 
 package missioncontrol;
 
+import missioncontrol.pipeline.EventSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
+import missioncontrol.pipeline.Event;
+import missioncontrol.pipeline.EventPipeline;
 
 /**
  *
@@ -19,12 +22,12 @@ import java.util.Arrays;
  */
 public class SerialInput extends Thread implements EventSource {
 
-	//private SerialPort spp;
+	private EventPipeline sink;
 	private Socket sock;
 	private OutputStream out;
 	private InputStream in;
 
-	MissionControl engine;
+	private MissionControl engine;
 
 	private long lastChange;
 
@@ -99,8 +102,9 @@ public class SerialInput extends Thread implements EventSource {
 
 	private void processCommand(int sender, byte[] data) {
 		if(data[0] == 'p') {
-			Util.log(this, "Recieved "+data[0]+" people");
-			engine.lightController.setPeople(data[1]);
+			Util.log(this, "Recieved "+data[0]+" people, not supported anymore");
+			//engine.lightController.setPeople(data[1]);
+			//sink.pumpEvent( Event.PeopleCounterEvent.createPeopleCount(data[1], "by wire", this));
 		}
 		if(data[0]=='P') {
 			Util.log(this, "Recieved people counter "+(char)data[1]);
@@ -109,8 +113,11 @@ public class SerialInput extends Thread implements EventSource {
 				lastChange = System.currentTimeMillis();
 				return;
 			}
-			if(data[1]=='+') engine.lightController.incPeople(+1);
-			else if(data[1]=='-') engine.lightController.incPeople(-1);
+			if(data[1]=='+') //engine.lightController.incPeople(+1);
+				sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(+1, "sensor", this));
+			else if(data[1]=='-')
+				sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(-1, "sensor", this));
+				//engine.lightController.incPeople(-1);
 			lastChange = System.currentTimeMillis();
 		}
 	}
@@ -156,6 +163,11 @@ public class SerialInput extends Thread implements EventSource {
 	public String toString() {
 		return getClass().getSimpleName()+"@"+hashCode();
 
+	}
+
+	@Override
+	public void setEventPipeline(EventPipeline ss) {
+		sink = ss;
 	}
 
 

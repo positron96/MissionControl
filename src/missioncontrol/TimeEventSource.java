@@ -6,10 +6,13 @@
 
 package missioncontrol;
 
+import missioncontrol.pipeline.EventSource;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import missioncontrol.pipeline.Event;
+import missioncontrol.pipeline.EventPipeline;
 
 /**
  *
@@ -17,6 +20,7 @@ import java.util.TimerTask;
  */
 public class TimeEventSource implements EventSource {
 	private MissionControl engine;
+	private EventPipeline sink;
 	private static final int INTERVAL_MIN = 5;
 
 	private Timer tm = null;
@@ -45,6 +49,11 @@ public class TimeEventSource implements EventSource {
 		tm = null;
 	}
 
+	@Override
+	public void setEventPipeline(EventPipeline ss) {
+		sink = ss;
+	}
+
 	private class TimeEvent extends TimerTask {
 		private boolean first = true;
 
@@ -54,7 +63,8 @@ public class TimeEventSource implements EventSource {
 			//Util.log("TimeEventSource.run", "fired at "+cl.getTime() );
 			int mins = cl.get(Calendar.MINUTE);
 			if(first || (mins >= 0 && mins<INTERVAL_MIN)) {
-				engine.lightController.updateDaytime(cl);
+				sink.pumpEvent( new Event(Event.EVENT_TIME, "time update", cl, TimeEventSource.this));
+				//engine.lightController.updateDaytime(cl);
 			}
 			first = false;
 		}
