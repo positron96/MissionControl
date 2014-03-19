@@ -3,7 +3,9 @@ MissionControl
 
 MissionControl is a java application for (kind of) home automation.
 
-Made for Raspberry pi, but should not be difficult to port to anything else supporting Java.
+Made for Raspberry pi, but should not be difficult to port to anything else supporting Java. 
+
+The repo contains a NetBeans project (can be built using bare ant). Does not use any side libraries, instead relying on native applications for hardware interaction.
 
 Architecture
 ------------
