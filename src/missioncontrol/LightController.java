@@ -6,6 +6,7 @@
 
 package missioncontrol;
 
+import java.io.File;
 import missioncontrol.pipeline.EventListener;
 import java.io.IOException;
 import java.util.Calendar;
@@ -28,6 +29,8 @@ public class LightController implements EventListener {
 	private Daytime daytime = Daytime.NOT_SET;
 	private boolean autoEnabled = true;
 
+	public static final String EVENT_PRINT_STATUS = "light.print";
+
 	/**
 	 * if true, do not turn off lights automatically
 	 */
@@ -43,8 +46,12 @@ public class LightController implements EventListener {
 		pipeline.registerListener(this, Event.EVENT_PEOPLE_COUNTER);
 		pipeline.registerListener(this, Event.EVENT_USER_LIGHT);
 		pipeline.registerListener(this, Event.EVENT_TIME);
-
-		lightControlExecutable = System.getProperty("lightcontrol.file","lightcontrol");
+		pipeline.registerListener(this, EVENT_PRINT_STATUS);
+		try {
+			lightControlExecutable = new File(System.getProperty("lightcontrol.file","lightcontrol")).getCanonicalPath();
+		} catch (IOException ex) {
+			lightControlExecutable = System.getProperty("lightcontrol.file","lightcontrol");
+		}
 
 		cPeople = Integer.parseInt(engine.currentState.getProperty(SETTING_PEOPLE, "0") );
 		Util.log(this, cPeople+" people upon creation");
@@ -174,6 +181,9 @@ public class LightController implements EventListener {
 		} else
 		if(e.type == Event.EVENT_TIME) {
 			updateDaytime( (Calendar)e.data );
+		} else
+		if(e.type == EVENT_PRINT_STATUS) {
+			Util.log(this, "Light state = "+getState() );
 		}
 
 	}

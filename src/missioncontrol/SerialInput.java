@@ -31,8 +31,12 @@ public class SerialInput extends Thread implements EventSource {
 
 	private long lastChange;
 
+	private long lastSockOpen=0;
+
 	public SerialInput(MissionControl engine) {
+		super("SerialInput Thread");
 		this.engine = engine;
+		lastSockOpen = System.currentTimeMillis() - 2000;
 	}
 
 	private static final int PACK_DAT = '1';
@@ -47,16 +51,12 @@ public class SerialInput extends Thread implements EventSource {
 	@Override
 	public void run() {
 		open();
-		if(sock==null) {
-			Util.log(this, "run(): spp did not opened correctly, quitting thread");
-			return;
-		}
 		while( !isInterrupted() ) {
 			try {
 				int cmd = in.read();
 				if(cmd==-1) {
 					Util.log(this, "EOF, Trying to reconnect");
-					sock.close();
+					in.close();
 					open();
 				}
 				//System.out.println("cmd = "+cmd);
@@ -93,7 +93,7 @@ public class SerialInput extends Thread implements EventSource {
 		}
 
 		Util.log(this, "run(): closing & quitting");
-		if(sock.isConnected()) try {
+		if(sock!=null && sock.isConnected()) try {
 			sock.close();
 		}catch(IOException e) {
 			e.printStackTrace();
@@ -125,15 +125,24 @@ public class SerialInput extends Thread implements EventSource {
 
 
 	private void open() {
-		try {
-			sock = new Socket();
-			sock.connect(new InetSocketAddress("127.0.0.1", 2323));
-			in = sock.getInputStream();
-			out = sock.getOutputStream();
-			Util.log(this, "open(): spp opened");
-		} catch (IOException e) {
-			e.printStackTrace();
+		if(System.currentTimeMillis() < lastSockOpen+1000) {
+			Util.log(this, "Too frequent sock closing, ser2net probably not working");
 			sock = null;
+		} else
+			try {
+				lastSockOpen = System.currentTimeMillis();
+				sock = new Socket();
+				sock.connect(new InetSocketAddress("127.0.0.1", 2323));
+				in = sock.getInputStream();
+				out = sock.getOutputStream();
+				Util.log(this, "open(): spp opened");
+			} catch (IOException e) {
+				e.printStackTrace();
+				sock = null;
+			}
+		if(sock==null) {
+			Util.log(this, "run(): spp did not open correctly, quitting thread");
+			terminate();
 		}
 	}
 

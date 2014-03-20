@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import missioncontrol.pipeline.Event;
 import missioncontrol.pipeline.EventPipeline;
 
 /**
@@ -37,7 +38,7 @@ public class MissionControl {
 	private static final String SETTINGS_FILE = "missioncontrol.properties";
 
 	public MissionControl() {
-		Runtime.getRuntime().addShutdownHook ( shutdownHook );
+		//Runtime.getRuntime().addShutdownHook ( shutdownHook );
 
 		try {
 			//System.getProperties().
@@ -58,7 +59,8 @@ public class MissionControl {
 
 		pipeline.registerSource( new PipeInput(this) );
 		pipeline.registerSource( new SerialInput(this) );
-		pipeline.registerSource(new TimeEventSource(this) );
+		pipeline.registerSource( new TimeEventSource(this) );
+		pipeline.registerSource( new IRControlLauncher() );
 
 		speech = new SpeechGenerator(this);
 		Util.speech = speech;
@@ -74,14 +76,20 @@ public class MissionControl {
 		BufferedReader rd = new BufferedReader(new InputStreamReader(System.in) );
 		while(true) {
 			try {
-				String s = rd.readLine().trim();
+				String s = rd.readLine();
+				if(s==null) {
+					Util.log(this, "stdin closed, not listening");
+					break;
+				}
+				s = s.trim();
+
 				if(s.startsWith("send ")) {
 					String cmd = s.substring(5);
 					spp.sendCommand( (byte)'a', cmd.getBytes() );
 				} else
 				if(s.equals("q")) {
 					Util.log(this, "quit command received");
-					System.exit(0);
+					pipeline.pumpEvent(Event.SHUTDOWN_EVENT);
 					break;
 				} else
 				if(s.equals("light")) {
@@ -119,6 +127,7 @@ public class MissionControl {
 			pipeline.terminate();
 			lightController.terminate();
 			try {
+				Util.log(MissionControl.this, "Saving state");
 				currentState.store(new FileWriter(STATE_FILE), "Saved at "+new Date() );
 			} catch (IOException ex) {
 				Util.log(this, "Could not save state: "+ex);

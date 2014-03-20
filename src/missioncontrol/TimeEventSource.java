@@ -45,8 +45,10 @@ public class TimeEventSource implements EventSource {
 
 	@Override
 	public void terminate() {
-		tm.cancel();
-		tm = null;
+		if(tm!=null) {
+			tm.cancel();
+			tm = null;
+		}
 	}
 
 	@Override

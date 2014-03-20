@@ -55,6 +55,9 @@ public class Event {
 		return message;
 	}
 
+	public static final String SHUTDOWN_EVENT_TYPE = "system.shutdown";
+	public static final Event SHUTDOWN_EVENT = new Event(SHUTDOWN_EVENT_TYPE, null);
+
 	public static class PeopleCounterEvent extends Event {
 		public final int increment;
 		public final int count;

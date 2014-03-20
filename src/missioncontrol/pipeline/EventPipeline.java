@@ -9,20 +9,26 @@ package missioncontrol.pipeline;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import missioncontrol.Util;
 
 /**
  *
  * @author positron
  */
-public class EventPipeline {
+public class EventPipeline extends Thread {
 	//private final Set<String> types = new HashSet<>();
 	private final Map<String, Set<EventListener> > listeners = new HashMap<>();
 
 	private final Set<EventSource> sources = new HashSet<>();
 
-	public EventPipeline() {
+	private final BlockingQueue<Event> queue;
 
+	public EventPipeline() {
+		queue = new LinkedBlockingQueue<>();
 	}
 
 	public void registerListener(EventListener ll, String eventType) {
@@ -33,10 +39,28 @@ public class EventPipeline {
 	}
 
 	public void pumpEvent(Event e) {
-		String type = e.getType();
-		Set<EventListener> set = listeners.get(type);
-		if(set!=null) for(EventListener l: set)
-			l.processEvent(e);
+		queue.offer(e);
+	}
+
+	@Override
+	public void run() {
+		while(!isInterrupted()) {
+			try {
+				Event e = queue.take();
+				String type = e.getType();
+
+				Set<EventListener> set = listeners.get(type);
+				if(set!=null) for(EventListener l: set)
+					l.processEvent(e);
+				if(e.getType() == Event.SHUTDOWN_EVENT_TYPE) {
+					terminateImpl();
+					System.exit(0);
+				}
+			} catch (InterruptedException ex) {
+				ex.printStackTrace();
+				break;
+			}
+		}
 	}
 
 	public void registerSource(EventSource ss) {
@@ -44,11 +68,17 @@ public class EventPipeline {
 		ss.setEventPipeline(this);
 	}
 
+	@Override
 	public void start() {
 		for(EventSource e: sources) e.start();
+		super.start();
 	}
 
 	public void terminate() {
+		pumpEvent(Event.SHUTDOWN_EVENT);
+	}
+
+	private void terminateImpl() {
 		for(EventSource e: sources) {
 			e.terminate();
 			if(e instanceof Thread)
@@ -57,9 +87,11 @@ public class EventPipeline {
 						e.wait(500);
 					}
 				} catch (InterruptedException ex) {
-					ex.printStackTrace();
+					//ex.printStackTrace();
+					//Util.log(this, "Normal interrupt sequence for "+ e+" interrupted by "+ex);
 				}
 		}
+		interrupt();
 	}
 
 }

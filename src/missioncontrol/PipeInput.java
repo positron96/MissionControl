@@ -24,16 +24,18 @@ import missioncontrol.pipeline.EventPipeline;
  */
 public class PipeInput extends Thread implements EventSource {
 
-	private MissionControl engine;
+	private final MissionControl engine;
 	private EventPipeline sink;
 	//private SerialPort spp;
 	private File file;
 	private FileChannel fin = null;
 
 	public PipeInput(MissionControl engine) {
+		super("PipeInput Thread");
 		this.engine = engine;
 	}
 
+	@Override
 	public void setEventPipeline(EventPipeline ss) {
 		sink = ss;
 	}
@@ -78,7 +80,7 @@ public class PipeInput extends Thread implements EventSource {
 					ex.printStackTrace();
 				}
 			}
-			Util.log(this,"graceful exit");
+			Util.log(this,"run(): graceful exit");
 		} catch (FileNotFoundException e) {
 			Util.log(this, "pipe not found, quitting");
 		}
@@ -93,7 +95,7 @@ public class PipeInput extends Thread implements EventSource {
 		this.interrupt();
 		try {
 			FileWriter f = new FileWriter(file);
-			f.write("SELF. term");
+			f.write("PIPE. term");
 			f.close();
 			file.delete();
 		} catch(IOException e) {
@@ -109,10 +111,15 @@ public class PipeInput extends Thread implements EventSource {
 
 	private void processMessage(String msg) {
 		//System.out.println("msg is "+msg);
+		msg = msg.trim();
 		Util.log(this, "got message: "+msg);
+		if(msg.toLowerCase().equals("q")) {
+			sink.pumpEvent(Event.SHUTDOWN_EVENT);
+			return;
+		}
 		StringTokenizer st= new StringTokenizer(msg, ".");
 		String src = st.nextToken();
-		String arg = st.nextToken();
+		String arg = st.hasMoreElements() ? st.nextToken() : "";
 		switch (src) {
 			case "IR" :
 				java.util.Scanner sc = new Scanner(arg);
@@ -134,8 +141,14 @@ public class PipeInput extends Thread implements EventSource {
 					//engine.lightController.flip(true, );
 				}
 				break;
-			case "SELF":
+			case "LIGHT":
+				sink.pumpEvent( new Event(LightController.EVENT_PRINT_STATUS, this) );
+				break;
+			case "PEOPLE":
 
+				break;
+			case "PIPE":
+				if(arg.toUpperCase().equals("TERM")) {}
 				break;
 			default:
 				throw new RuntimeException("Unknown source received: "+src);
