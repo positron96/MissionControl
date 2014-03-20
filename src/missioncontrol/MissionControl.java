@@ -32,6 +32,7 @@ public class MissionControl {
 
 	Properties currentState = new Properties();
 	private static final String STATE_FILE = "missionstate.properties";
+	private static final String SETTINGS_FILE = "missioncontrol.properties";
 
 	public MissionControl() {
 		Runtime.getRuntime().addShutdownHook ( shutdownHook );
@@ -44,6 +45,15 @@ public class MissionControl {
 		eventSources.add( new PipeInput(this) );
 		eventSources.add( new TimeEventSource(this) );
 		lightController = new LightController(this);
+		try {
+			//System.getProperties().
+			Properties pp = new Properties();
+			pp.load( new FileReader( SETTINGS_FILE ) );
+			System.getProperties().putAll(pp);
+		} catch(IOException e) {
+			Util.log(this, "Could not load settings: "+e);
+		}
+
 		try {
 			currentState.load( new FileReader(STATE_FILE) );
 		} catch(IOException e) {
