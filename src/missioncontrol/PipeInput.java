@@ -87,6 +87,7 @@ public class PipeInput extends Thread implements EventSource {
 			FileWriter f = new FileWriter(file);
 			f.write("SELF. term");
 			f.close();
+			file.delete();
 		} catch(IOException e) {
 
 		}
