@@ -88,7 +88,7 @@ public class EventPipeline extends Thread {
 					}
 				} catch (InterruptedException ex) {
 					//ex.printStackTrace();
-					//Util.log(this, "Normal interrupt sequence for "+ e+" interrupted by "+ex);
+					Util.log(this, "Normal interrupt sequence for "+ e+" interrupted by "+ex);
 				}
 		}
 		interrupt();

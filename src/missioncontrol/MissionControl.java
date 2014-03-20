@@ -38,7 +38,7 @@ public class MissionControl {
 	private static final String SETTINGS_FILE = "missioncontrol.properties";
 
 	public MissionControl() {
-		//Runtime.getRuntime().addShutdownHook ( shutdownHook );
+		Runtime.getRuntime().addShutdownHook ( shutdownHook );
 
 		try {
 			//System.getProperties().
@@ -124,7 +124,7 @@ public class MissionControl {
 		@Override
 		public void run() {
 			Util.log(MissionControl.this, "Shutdown hook in action");
-			pipeline.terminate();
+			if( pipeline.isAlive() ) pipeline.terminate();
 			lightController.terminate();
 			try {
 				Util.log(MissionControl.this, "Saving state");
