@@ -6,17 +6,21 @@
 
 package missioncontrol;
 
+import missioncontrol.pipeline.EventListener;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Scanner;
+import missioncontrol.pipeline.Event;
+import missioncontrol.pipeline.EventPipeline;
 
 /**
  *
  * @author positron
  */
-public class LightController {
+public class LightController implements EventListener {
 
 	private MissionControl engine;
+	private EventPipeline pipeline;
 	private static String lightControlExecutable = null;
 	private enum State { ON, OFF }
 	private State state;
@@ -32,8 +36,13 @@ public class LightController {
 	private int cPeople = 0;
 	private final String SETTING_PEOPLE = "peoplecounter.count";
 
-	public LightController(MissionControl engine) {
+
+	public LightController(MissionControl engine, EventPipeline pp) {
 		this.engine = engine;
+		this.pipeline = pp;
+		pipeline.registerListener(this, Event.EVENT_PEOPLE_COUNTER);
+		pipeline.registerListener(this, Event.EVENT_USER_LIGHT);
+		pipeline.registerListener(this, Event.EVENT_TIME);
 
 		lightControlExecutable = System.getProperty("lightcontrol.file","lightcontrol");
 
@@ -120,9 +129,9 @@ public class LightController {
 		cPeople = ppl;
 
 		if(lastPeople==0 && cPeople!=0)
-			engine.lightController.turnOn(false, "people counter="+cPeople);
+			turnOn(false, "people counter="+cPeople);
 		if(lastPeople>0 && cPeople == 0)
-			engine.lightController.turnOff(false, "people counter zero");
+			turnOff(false, "people counter zero");
 	}
 
 	public boolean getState() { return state==State.ON; }
@@ -149,5 +158,26 @@ public class LightController {
 	public void terminate() {
 		engine.currentState.setProperty(SETTING_PEOPLE, ""+cPeople);
 	}
+
+	@Override
+	public void processEvent(Event e) {
+		if(e instanceof Event.PeopleCounterEvent) {
+			incPeople(cPeople);
+		} else
+		if(e instanceof Event.LightEvent) {
+			Event.LightEvent le = (Event.LightEvent)e;
+			switch( le.state ) {
+				case ON: turnOn( le.manual, e.getMessage() ); break;
+				case OFF: turnOff( le.manual, le.getMessage() ); break;
+				case SWITCH: flip(le.manual, le.getMessage() ); break;
+			}
+		} else
+		if(e.type == Event.EVENT_TIME) {
+			updateDaytime( (Calendar)e.data );
+		}
+
+	}
+
+
 
 }

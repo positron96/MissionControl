@@ -5,6 +5,7 @@
  */
 package missioncontrol;
 
+import missioncontrol.pipeline.EventSource;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,6 +15,8 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Scanner;
 import java.util.StringTokenizer;
+import missioncontrol.pipeline.Event;
+import missioncontrol.pipeline.EventPipeline;
 
 /**
  *
@@ -22,12 +25,17 @@ import java.util.StringTokenizer;
 public class PipeInput extends Thread implements EventSource {
 
 	private MissionControl engine;
+	private EventPipeline sink;
 	//private SerialPort spp;
 	private File file;
 	private FileChannel fin = null;
 
 	public PipeInput(MissionControl engine) {
 		this.engine = engine;
+	}
+
+	public void setEventPipeline(EventPipeline ss) {
+		sink = ss;
 	}
 
 
@@ -112,12 +120,18 @@ public class PipeInput extends Thread implements EventSource {
 				int cmd = sc.nextInt();
 				String comment = sc.nextLine();
 				if(device==0 && (cmd==9 || cmd==21)) {
-					engine.lightController.incPeople(+1);
+					//engine.lightController.incPeople(+1);
+					sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(+1, "IR command", this));
 				} else
 				if(device==0 && (cmd==13 || cmd==7)) {
-					engine.lightController.incPeople(-1);
+					sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(-1, "IR Command", this));
+					//engine.lightController.incPeople(-1);
 				} else {
-					engine.lightController.flip(true, String.format("IR from %d cmd %d %s", device, cmd, comment));
+					sink.pumpEvent( new Event.LightEvent(
+							Event.LightEvent.State.SWITCH,
+							String.format("IR from %d cmd %d %s", device, cmd, comment),
+							this) );
+					//engine.lightController.flip(true, );
 				}
 				break;
 			case "SELF":

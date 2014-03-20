@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package missioncontrol;
+package missioncontrol.pipeline;
 
 /**
  *
@@ -12,6 +12,8 @@ package missioncontrol;
  */
 public interface EventSource {
 
+	public void setEventPipeline(EventPipeline ss) ;
+	
 	public void start();
 
 	public void terminate();

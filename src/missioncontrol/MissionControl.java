@@ -6,6 +6,7 @@
 
 package missioncontrol;
 
+import missioncontrol.pipeline.EventSource;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -15,6 +16,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import missioncontrol.pipeline.EventPipeline;
 
 /**
  *
@@ -22,11 +24,11 @@ import java.util.Properties;
  */
 public class MissionControl {
 
-	List<EventSource> eventSources = new LinkedList<> ();
+	EventPipeline pipeline;
 
-	LightController lightController;
+	private LightController lightController;
 
-	SpeechGenerator speech;
+	private SpeechGenerator speech;
 
 	SerialInput spp;
 
@@ -37,14 +39,6 @@ public class MissionControl {
 	public MissionControl() {
 		Runtime.getRuntime().addShutdownHook ( shutdownHook );
 
-		speech = new SpeechGenerator(this);
-		Util.speech = speech;
-		speech.speak("Hello");
-		spp = new SerialInput(this);
-		eventSources.add( spp );
-		eventSources.add( new PipeInput(this) );
-		eventSources.add( new TimeEventSource(this) );
-		lightController = new LightController(this);
 		try {
 			//System.getProperties().
 			Properties pp = new Properties();
@@ -59,10 +53,23 @@ public class MissionControl {
 		} catch(IOException e) {
 			Util.log(this, "Could not load state: "+e);
 		}
+
+		pipeline = new EventPipeline();
+
+		pipeline.registerSource( new PipeInput(this) );
+		pipeline.registerSource( new SerialInput(this) );
+		pipeline.registerSource(new TimeEventSource(this) );
+
+		speech = new SpeechGenerator(this);
+		Util.speech = speech;
+		speech.speak("Hello");
+		spp = new SerialInput(this);
+
+		lightController = new LightController(this, pipeline);
 	}
 
 	public void work() {
-		for(EventSource es : eventSources) es.start();
+		pipeline.start();
 
 		BufferedReader rd = new BufferedReader(new InputStreamReader(System.in) );
 		while(true) {
@@ -105,23 +112,11 @@ public class MissionControl {
 		}
 	}
 
-
-
 	private final Thread shutdownHook = new Thread() {
 		@Override
 		public void run() {
 			Util.log(MissionControl.this, "Shutdown hook in action");
-			for(EventSource es : eventSources) {
-				es.terminate();
-				if(es instanceof Thread)
-					try {
-						synchronized (es) {
-							es.wait(500);
-						}
-					} catch (InterruptedException ex) {
-						ex.printStackTrace();
-					}
-			}
+			pipeline.terminate();
 			lightController.terminate();
 			try {
 				currentState.store(new FileWriter(STATE_FILE), "Saved at "+new Date() );
