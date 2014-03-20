@@ -8,6 +8,8 @@ package missioncontrol;
 
 import java.io.File;
 import java.io.IOException;
+import missioncontrol.pipeline.EventPipeline;
+import missioncontrol.pipeline.EventSource;
 
 /**
  *
@@ -37,7 +39,13 @@ public class IRControlLauncher implements EventSource {
 
 	@Override
 	public void terminate() {
-		process.destroy();
+		if(process!=null)
+			process.destroy();
+	}
+
+	@Override
+	public void setEventPipeline(EventPipeline ss) {
+
 	}
 
 }
