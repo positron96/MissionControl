@@ -94,13 +94,14 @@ public class PipeInput extends Thread implements EventSource {
 	@Override
 	public void terminate() {
 		this.interrupt();
-		try {
-			FileWriter f = new FileWriter(file);
-			f.write("PIPE. term");
-			f.close();
-		} catch(IOException e) {
+		if(file.exists())
+			try {
+				FileWriter f = new FileWriter(file);
+				f.write("PIPE. term");
+				f.close();
+			} catch(IOException e) {
 
-		}
+			}
 		/*if(fin!=null) try {
 			fin.close();
 		} catch (IOException ex) {

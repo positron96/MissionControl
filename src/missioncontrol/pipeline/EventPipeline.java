@@ -6,6 +6,7 @@
 
 package missioncontrol.pipeline;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -54,7 +55,7 @@ public class EventPipeline extends Thread {
 					l.processEvent(e);
 				if(e.getType() == Event.SHUTDOWN_EVENT_TYPE) {
 					terminateImpl();
-					System.exit(0);
+					//System.exit(0);
 				}
 			} catch (InterruptedException ex) {
 				ex.printStackTrace();

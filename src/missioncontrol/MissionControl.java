@@ -75,56 +75,63 @@ public class MissionControl {
 	public void work() {
 		pipeline.start();
 
-		BufferedReader rd = new BufferedReader(new InputStreamReader(System.in) );
-		while(true) {
-			try {
-				String s = rd.readLine();
-				if(s==null) {
-					Util.log(this, "stdin closed, not listening");
-					break;
-				}
-				try {
-					pin.insertMessage(s);
-				} catch(RuntimeException e) {
-					System.err.println(""+e);
-				}
-				/*s = s.trim();
+		Thread console  = new Thread() {
+			public void run() {
 
-				if(s.startsWith("send ")) {
-					String cmd = s.substring(5);
-					spp.sendCommand( (byte)'a', cmd.getBytes() );
-				} else
-				if(s.equals("q")) {
-					Util.log(this, "quit command received");
-					pipeline.pumpEvent(Event.SHUTDOWN_EVENT);
-					break;
-				} else
-				if(s.equals("light")) {
-					Util.log(this, "Light state = "+lightController.getState() );
-				} else
-				if(s.startsWith("auto ")) {
-					//Util.log(this, "Light state = "+lightController.getState() );
-					switch(s.substring(6) ) {
-						case "off": lightController.setAutoControlEnabled(false);
+				BufferedReader rd = new BufferedReader(new InputStreamReader(System.in) );
+				while(true) {
+					try {
+						String s = rd.readLine();
+						if(s==null) {
+							Util.log(this, "stdin closed, not listening");
 							break;
-						case "on":lightController.setAutoControlEnabled( true);
+						}
+						try {
+							pin.insertMessage(s);
+						} catch(RuntimeException e) {
+							System.err.println(""+e);
+						}
+						/*s = s.trim();
+
+						if(s.startsWith("send ")) {
+							String cmd = s.substring(5);
+							spp.sendCommand( (byte)'a', cmd.getBytes() );
+						} else
+						if(s.equals("q")) {
+							Util.log(this, "quit command received");
+							pipeline.pumpEvent(Event.SHUTDOWN_EVENT);
 							break;
+						} else
+						if(s.equals("light")) {
+							Util.log(this, "Light state = "+lightController.getState() );
+						} else
+						if(s.startsWith("auto ")) {
+							//Util.log(this, "Light state = "+lightController.getState() );
+							switch(s.substring(6) ) {
+								case "off": lightController.setAutoControlEnabled(false);
+									break;
+								case "on":lightController.setAutoControlEnabled( true);
+									break;
+							}
+						} else
+						if(s.startsWith("speak ")) {
+							speech.speak(s.substring(6));
+						} else
+						if(s.startsWith("people ")) {
+							String n = s.substring(7);
+							lightController.setPeople( Integer.parseInt(n));
+						} else {
+							Util.log(this, "unknown command: "+s);
+						}*/
+					} catch (IOException ex) {
+						ex.printStackTrace();
+						break;
 					}
-				} else
-				if(s.startsWith("speak ")) {
-					speech.speak(s.substring(6));
-				} else
-				if(s.startsWith("people ")) {
-					String n = s.substring(7);
-					lightController.setPeople( Integer.parseInt(n));
-				} else {
-					Util.log(this, "unknown command: "+s);
-				}*/
-			} catch (IOException ex) {
-				ex.printStackTrace();
-				break;
+				}
 			}
-		}
+		};
+		console.setDaemon(true);
+		console.start();
 	}
 
 	private final Thread shutdownHook = new Thread() {

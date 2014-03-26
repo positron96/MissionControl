@@ -139,7 +139,8 @@ public class SerialInput extends Thread implements EventSource {
 				out = sock.getOutputStream();
 				Util.log(this, "open(): spp opened");
 			} catch (IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
+				Util.log(this, "open ser2net socket failed: "+e);
 				sock = null;
 			}
 		if(sock==null) {
