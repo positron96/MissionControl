@@ -169,7 +169,9 @@ public class LightController implements EventListener {
 	@Override
 	public void processEvent(Event e) {
 		if(e instanceof Event.PeopleCounterEvent) {
-			incPeople(cPeople);
+			Event.PeopleCounterEvent pe= (Event.PeopleCounterEvent)e;
+			if(pe.increment != 0) incPeople(pe.increment);
+			else setPeople(pe.count);
 		} else
 		if(e instanceof Event.LightEvent) {
 			Event.LightEvent le = (Event.LightEvent)e;
