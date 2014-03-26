@@ -109,17 +109,21 @@ public class PipeInput extends Thread implements EventSource {
 		Util.log(this, "terminate()");
 	}
 
-	private void processMessage(String msg) {
-		//System.out.println("msg is "+msg);
-		msg = msg.trim();
-		Util.log(this, "got message: "+msg);
+	public void insertMessage(String msg) {
+		processMessage(msg);
+	}
+
+	private synchronized void processMessage(String msg) {
+		//msg = msg.trim();
+		//Util.log(this, "got message: "+msg);
 		StringTokenizer st= new StringTokenizer(msg, ".");
-		String src = st.nextToken();
-		String arg = st.hasMoreElements() ? st.nextToken() : "";
-		st = new StringTokenizer(arg, " ");
-		String arg1 = st.nextToken();
-		String arg2 = st.hasMoreElements() ? st.nextToken() : "";
-		switch (src.toUpperCase().trim()) {
+		String src = st.nextToken().toUpperCase().trim();
+		String arg = st.hasMoreElements() ? st.nextToken().trim() : "";
+		int p = arg.indexOf(' ');
+		String arg1 = p!=-1 ? arg.substring(0, p).trim() : arg;
+		String arg2 = p!=-1 ? arg.substring(p).trim() : "";
+		Util.log(this, "got message: "+src+"."+arg);
+		switch (src) {
 			case "Q":
 				sink.pumpEvent(Event.SHUTDOWN_EVENT);
 				break;
@@ -154,7 +158,8 @@ public class PipeInput extends Thread implements EventSource {
 				if(arg.toUpperCase().equals("TERM")) {}
 				break;
 			default:
-				throw new RuntimeException("Unknown source received: "+src);
+				Util.log(this, "processCommand: Unknown source received: "+src);
+				//throw new RuntimeException("Unknown source received: "+src);
 		}
 
 	}

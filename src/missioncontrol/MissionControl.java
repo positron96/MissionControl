@@ -32,6 +32,7 @@ public class MissionControl {
 	private SpeechGenerator speech;
 
 	SerialInput spp;
+	PipeInput pin;
 
 	Properties currentState = new Properties();
 	private static final String STATE_FILE = "missionstate.properties";
@@ -58,7 +59,8 @@ public class MissionControl {
 		pipeline = new EventPipeline();
 
 		spp = new SerialInput(this);
-		pipeline.registerSource( new PipeInput(this) );
+		pin = new PipeInput(this);
+		pipeline.registerSource( pin );
 		pipeline.registerSource( spp );
 		pipeline.registerSource( new TimeEventSource(this) );
 		pipeline.registerSource( new IRControlLauncher() );
@@ -81,7 +83,12 @@ public class MissionControl {
 					Util.log(this, "stdin closed, not listening");
 					break;
 				}
-				s = s.trim();
+				try {
+					pin.insertMessage(s);
+				} catch(RuntimeException e) {
+					System.err.println(""+e);
+				}
+				/*s = s.trim();
 
 				if(s.startsWith("send ")) {
 					String cmd = s.substring(5);
@@ -112,7 +119,7 @@ public class MissionControl {
 					lightController.setPeople( Integer.parseInt(n));
 				} else {
 					Util.log(this, "unknown command: "+s);
-				}
+				}*/
 			} catch (IOException ex) {
 				ex.printStackTrace();
 				break;
