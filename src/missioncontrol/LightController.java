@@ -148,7 +148,8 @@ public class LightController implements EventListener {
 			Process p = new ProcessBuilder(lightControlExecutable, "-r").start();
 			state = new Scanner(p.getInputStream()).nextInt() == 1 ? State.ON : State.OFF;
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			//ex.printStackTrace();
+			Util.log(this, "syncState: "+ex);
 		}
 	}
 

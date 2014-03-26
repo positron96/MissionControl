@@ -33,7 +33,8 @@ public class IRControlLauncher implements EventSource {
 			process = pb.start();
 			Util.log(this, "irrecv started successfully");
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			//ex.printStackTrace();
+			Util.log(this, "start: problem starting irrecv: "+ex);
 		}
 	}
 

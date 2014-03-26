@@ -33,10 +33,12 @@ public class SerialInput extends Thread implements EventSource {
 
 	private long lastSockOpen=0;
 
+	private static final int GIVEUP_INTL = 2000;
+
 	public SerialInput(MissionControl engine) {
 		super("SerialInput Thread");
 		this.engine = engine;
-		lastSockOpen = System.currentTimeMillis() - 2000;
+		lastSockOpen = System.currentTimeMillis() - GIVEUP_INTL*5;
 	}
 
 	private static final int PACK_DAT = '1';
@@ -125,8 +127,8 @@ public class SerialInput extends Thread implements EventSource {
 
 
 	private void open() {
-		if(System.currentTimeMillis() < lastSockOpen+1000) {
-			Util.log(this, "Too frequent sock closing, ser2net probably not working");
+		if(System.currentTimeMillis() < lastSockOpen+GIVEUP_INTL) {
+			Util.log(this, "Too frequent socket closing, ser2net probably not working");
 			sock = null;
 		} else
 			try {
