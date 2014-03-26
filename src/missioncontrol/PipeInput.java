@@ -81,6 +81,7 @@ public class PipeInput extends Thread implements EventSource {
 				}
 			}
 			Util.log(this,"run(): graceful exit");
+			if(file.exists()) file.delete();
 		} catch (FileNotFoundException e) {
 			Util.log(this, "pipe not found, quitting");
 		}
@@ -97,7 +98,6 @@ public class PipeInput extends Thread implements EventSource {
 			FileWriter f = new FileWriter(file);
 			f.write("PIPE. term");
 			f.close();
-			file.delete();
 		} catch(IOException e) {
 
 		}
