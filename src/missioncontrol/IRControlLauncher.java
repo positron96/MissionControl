@@ -39,6 +39,7 @@ public class IRControlLauncher implements EventSource {
 
 	@Override
 	public void terminate() {
+		Util.log(this, "Terminating irrecv");
 		if(process!=null)
 			process.destroy();
 	}

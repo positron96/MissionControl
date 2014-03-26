@@ -14,18 +14,25 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.Locale;
+import missioncontrol.pipeline.Event;
+import missioncontrol.pipeline.EventListener;
+import missioncontrol.pipeline.EventPipeline;
 
 /**
  *
  * @author positron
  */
-public class SpeechGenerator {
+public class SpeechGenerator implements EventListener {
 
 	private MissionControl engine;
 	private boolean muted = false;
 
-	public SpeechGenerator(MissionControl engine) {
+	public static final String EVENT_SPEAK = "speech.*";
+
+	public SpeechGenerator(MissionControl engine, EventPipeline pipeline) {
 		this.engine = engine;
+		pipeline.registerListener(this, EVENT_SPEAK);
+		Util.speech = this;
 	}
 
 	public synchronized void mute() {
@@ -51,33 +58,14 @@ public class SpeechGenerator {
 	}
 
 	private void playStream(InputStream is) throws IOException {
-		ProcessBuilder pb = new ProcessBuilder("mpg123", "-q", "-");
-		try {
-			Process p = pb.start();
-			try (OutputStream stdin = p.getOutputStream()) {
-				byte bb[] = new byte[1024];
-				int rd;
-				while( (rd = is.read(bb)) != -1) {
-					stdin.write(bb, 0, rd);
-				}
-				is.close();
-			}
-			int er = p.waitFor();
-			if(er!= 0) throw new RuntimeException("mpg123 returned error "+er);
-		} catch (InterruptedException ex) {
-			//ex.printStackTrace();
-		}
+		Util.popenStdin(new String[]{"mpg123", "-q", "-"}, is);
 	}
 
 	private void playFile(File ff) {
-		ProcessBuilder pb = new ProcessBuilder("mpg123", "-q", ff.getAbsolutePath());
 		try {
-			Process p = pb.start();
-			int er = p.waitFor();
-			if(er!= 0) throw new RuntimeException("mpg123 returned error "+er);
-		}catch(IOException e) {
+			Util.popen("mpg123", "-q", ff.getAbsolutePath());
+		} catch(IOException e) {
 			Util.log(this, "Could not speak: "+e);
-		} catch (InterruptedException ex) {
 		}
 	}
 
@@ -106,6 +94,26 @@ public class SpeechGenerator {
 			//Util.log(this, "Interrupted: "+ex);
 		}
 		return null;
+	}
+
+	@Override
+	public void processEvent(Event e) {
+		if(e.type == EVENT_SPEAK) {
+			switch(e.subType) {
+				case "DO":
+				case "SPEEK":
+					speak((String)e.data);
+					break;
+				case "MUTE":
+					mute();
+					break;
+				case "UNMUTE":
+					unmute();
+					break;
+			}
+
+
+		}
 	}
 
 }

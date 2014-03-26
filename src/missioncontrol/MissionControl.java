@@ -57,15 +57,15 @@ public class MissionControl {
 
 		pipeline = new EventPipeline();
 
+		spp = new SerialInput(this);
 		pipeline.registerSource( new PipeInput(this) );
-		pipeline.registerSource( new SerialInput(this) );
+		pipeline.registerSource( spp );
 		pipeline.registerSource( new TimeEventSource(this) );
 		pipeline.registerSource( new IRControlLauncher() );
 
-		speech = new SpeechGenerator(this);
-		Util.speech = speech;
+		speech = new SpeechGenerator(this, pipeline);
 		speech.speak("Hello");
-		spp = new SerialInput(this);
+
 
 		lightController = new LightController(this, pipeline);
 	}

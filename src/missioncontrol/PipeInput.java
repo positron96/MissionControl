@@ -113,26 +113,26 @@ public class PipeInput extends Thread implements EventSource {
 		//System.out.println("msg is "+msg);
 		msg = msg.trim();
 		Util.log(this, "got message: "+msg);
-		if(msg.toLowerCase().equals("q")) {
-			sink.pumpEvent(Event.SHUTDOWN_EVENT);
-			return;
-		}
 		StringTokenizer st= new StringTokenizer(msg, ".");
 		String src = st.nextToken();
 		String arg = st.hasMoreElements() ? st.nextToken() : "";
-		switch (src) {
+		st = new StringTokenizer(arg, " ");
+		String arg1 = st.nextToken();
+		String arg2 = st.hasMoreElements() ? st.nextToken() : "";
+		switch (src.toUpperCase().trim()) {
+			case "Q":
+				sink.pumpEvent(Event.SHUTDOWN_EVENT);
+				break;
 			case "IR" :
 				java.util.Scanner sc = new Scanner(arg);
 				int device = sc.nextInt();
 				int cmd = sc.nextInt();
 				String comment = sc.nextLine();
 				if(device==0 && (cmd==9 || cmd==21)) {
-					//engine.lightController.incPeople(+1);
 					sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(+1, "IR command", this));
 				} else
 				if(device==0 && (cmd==13 || cmd==7)) {
 					sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(-1, "IR Command", this));
-					//engine.lightController.incPeople(-1);
 				} else {
 					sink.pumpEvent( new Event.LightEvent(
 							Event.LightEvent.State.SWITCH,
@@ -141,11 +141,14 @@ public class PipeInput extends Thread implements EventSource {
 					//engine.lightController.flip(true, );
 				}
 				break;
+			case "SPEECH":
+				sink.pumpEvent( new Event(SpeechGenerator.EVENT_SPEAK, arg1.toUpperCase(), arg2, this) );
+				break;
 			case "LIGHT":
 				sink.pumpEvent( new Event(LightController.EVENT_PRINT_STATUS, this) );
 				break;
 			case "PEOPLE":
-
+				sink.pumpEvent( Event.PeopleCounterEvent.createPeopleCount(Integer.parseInt(arg), "", this));
 				break;
 			case "PIPE":
 				if(arg.toUpperCase().equals("TERM")) {}

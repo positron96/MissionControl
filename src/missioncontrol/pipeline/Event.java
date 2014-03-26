@@ -20,21 +20,18 @@ public class Event {
 	public final String subType;
 	public final Object data;
 
-	private String message;
+	//private String message;
 
 	private final EventSource source;
 
 	public Event(String type, EventSource src) {
-		this.type = type;
-		this.subType = null;
-		this.data = null;
-		this.source = src;
+		this(type, null, null, src);
+	}
+	public Event(String type, Object data, EventSource src) {
+		this(type, null, data, src);
 	}
 	public Event(String type, String subtype, EventSource src) {
-		this.type = type;
-		this.subType = subtype;
-		this.source = src;
-		this.data = null;
+		this(type, subtype, null, src);
 	}
 	public Event(String type, String subtype, Object data, EventSource src) {
 		this.type = type;
@@ -43,16 +40,17 @@ public class Event {
 		this.data = data;
 	}
 
-	public void setMessage(String msg) {
+	/*public void setMessage(String msg) {
 		message = msg;
-	}
+	}*/
 
 	public String getType() {
 		return type;
 	}
 
+
 	public String getMessage() {
-		return message;
+		return (String)data;
 	}
 
 	public static final String SHUTDOWN_EVENT_TYPE = "system.shutdown";
@@ -63,8 +61,8 @@ public class Event {
 		public final int count;
 
 		private PeopleCounterEvent(int inc, int count, String msg, EventSource es) {
-			super(EVENT_PEOPLE_COUNTER, es);
-			setMessage(msg);
+			super(EVENT_PEOPLE_COUNTER, (Object)msg, es);
+			//setMessage(msg);
 			this.increment = inc;
 			this.count = count;
 		}
@@ -81,8 +79,8 @@ public class Event {
 		public final State state;
 		public final boolean manual;
 		public LightEvent(State ss, String msg, EventSource es) {
-			super(EVENT_USER_LIGHT, es);
-			setMessage(msg);
+			super(EVENT_USER_LIGHT, (Object)msg, es);
+			//setMessage(msg);
 			state = ss;
 			manual = true;
 		}
