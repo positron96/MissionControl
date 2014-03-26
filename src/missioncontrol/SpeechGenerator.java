@@ -50,9 +50,16 @@ public class SpeechGenerator implements EventListener {
 	public synchronized void speak(String s, String lang) {
 		if(!muted) {
 			try {
-				playStream( callGoogle(s) );
+				InputStream in = null;
+				try {
+					in = callGoogle(s);
+				}catch(IOException e) {
+					Util.log(this, "speak by google: "+e);
+					playFile( callPico(s) );
+				}
+				playStream( in );
 			} catch(IOException ex) {
-				playFile( callPico(s) );
+				Util.log(this, "speak: "+ex);
 			}
 		}
 	}
@@ -62,6 +69,7 @@ public class SpeechGenerator implements EventListener {
 	}
 
 	private void playFile(File ff) {
+		//if(ff==null) Util.log();, EVENT_SPEAK);
 		try {
 			Util.popen("mpg123", "-q", ff.getAbsolutePath());
 		} catch(IOException e) {
@@ -82,33 +90,33 @@ public class SpeechGenerator implements EventListener {
 		}
 	}
 
-	private File callPico(String speech) {
-		try {
+	private File callPico(String speech) throws IOException {
+		//try {
 			File ff = File.createTempFile("speech", ".wav");
-			ProcessBuilder pb = new ProcessBuilder("pico2wave", "-w", ff.getAbsolutePath(), speech);
-			pb.start().waitFor();
+			Util.popen("pico2wave", "-w", ff.getAbsolutePath(), speech);
 			return ff;
-		}catch(IOException e) {
-			Util.log(this, "callPico:"+e);
-		} catch (InterruptedException ex) {
-			//Util.log(this, "Interrupted: "+ex);
+		/*catch(IOException e) {
+			Util.log(this, "callPico: "+e);
 		}
-		return null;
+		return null;*/
 	}
 
 	@Override
 	public void processEvent(Event e) {
 		if(e.type == EVENT_SPEAK) {
 			switch(e.subType) {
-				case "DO":
-				case "SPEEK":
-					speak((String)e.data);
-					break;
 				case "MUTE":
 					mute();
 					break;
 				case "UNMUTE":
 					unmute();
+					break;
+				case "DO":
+				case "SPEEK":
+					speak((String)e.data);
+					break;
+				default:
+					speak(e.subType);
 					break;
 			}
 
