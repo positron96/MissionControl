@@ -41,11 +41,12 @@ public class SerialInput extends Thread implements EventSource {
 		lastSockOpen = System.currentTimeMillis() - GIVEUP_INTL*5;
 	}
 
-	private static final int PACK_DAT = '1';
-	private static final int PACK_ACK = '9';
+	private static final int PACK_DAT = 'D';
+	private static final int PACK_ACK = 'A';
+	private static final int PACK_DISCOVER = 'H';
 
-	private byte calcCheckSum(int cmd, int sender, byte dat[]) {
-		int res = cmd ^ sender ^ dat.length;
+	private byte calcCheckSum(int cmd, int sender, int len, byte dat[]) {
+		int res = cmd ^ sender ^ len;
 		for(int i=0; i<dat.length; i++) res = res ^ dat[i];
 		return (byte)res;
 	}
@@ -53,6 +54,11 @@ public class SerialInput extends Thread implements EventSource {
 	@Override
 	public void run() {
 		open();
+		try {
+			sendRaw("H");
+		}catch(IOException e) {
+			Util.log(this, "DISCOVER sending failed: "+e);
+		}
 		while( !isInterrupted() ) {
 			try {
 				int cmd = in.read();
@@ -69,16 +75,20 @@ public class SerialInput extends Thread implements EventSource {
 						//System.out.println("sender = "+sender);
 						int len = in.read();
 						//System.out.println("len = "+len);
-						byte[] dat = new byte[len];
+						byte[] dat = new byte[len - '0'];
 						in.read(dat);
 						byte checksum = (byte)in.read();
-						byte achecksum = calcCheckSum(cmd, sender, dat);
+						byte achecksum = calcCheckSum(cmd, sender, len, dat);
 						if(checksum == achecksum) {
 							//System.out.println("Checksum ok");
 							out.write(PACK_ACK);
 							out.write(sender);
 							//System.out.println("Got data from "+(char)sender+": "+Arrays.toString(dat));
-							processCommand(sender, dat);
+							try {
+								processCommand(sender, dat);
+							} catch(Exception e) {
+								Util.log(this, "processCommand failed with "+e);
+							}
 						} else {
 							Util.log(this, "run(): Checksum mismatch: got "+checksum+"; calc "+achecksum);
 						}
@@ -103,27 +113,33 @@ public class SerialInput extends Thread implements EventSource {
 	}
 
 	private void processCommand(int sender, byte[] data) {
-		if(data[0] == 'p') {
-			Util.log(this, "Recieved "+data[0]+" people, not supported anymore");
-			//engine.lightController.setPeople(data[1]);
-			//sink.pumpEvent( Event.PeopleCounterEvent.createPeopleCount(data[1], "by wire", this));
-		}
-		if(data[0]=='P') {
-			Util.log(this, "Recieved people counter "+(char)data[1]);
-			if(System.currentTimeMillis() - lastChange < 1000) {
-				Util.log(this,"Not processing counter due to high freq event");
+		switch(data[0]) {
+			case 'H':
+				Util.log(this, "Discover from "+(char)sender);
+				break;
+			case 'p':
+				Util.log(this, "Recieved "+data[0]+" people, not supported anymore");
+				//engine.lightController.setPeople(data[1]);
+				//sink.pumpEvent( Event.PeopleCounterEvent.createPeopleCount(data[1], "by wire", this));
+				break;
+			case 'P':
+				Util.log(this, "Recieved people counter "+(char)data[1]);
+				if(System.currentTimeMillis() - lastChange < 1000) {
+					Util.log(this,"Not processing counter due to high freq event");
+					lastChange = System.currentTimeMillis();
+					return;
+				}
+				if(data[1]=='+') //engine.lightController.incPeople(+1);
+					sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(+1, "sensor", this));
+				else if(data[1]=='-')
+					sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(-1, "sensor", this));
+					//engine.lightController.incPeople(-1);
 				lastChange = System.currentTimeMillis();
-				return;
-			}
-			if(data[1]=='+') //engine.lightController.incPeople(+1);
-				sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(+1, "sensor", this));
-			else if(data[1]=='-')
-				sink.pumpEvent( Event.PeopleCounterEvent.createPeopleIncrement(-1, "sensor", this));
-				//engine.lightController.incPeople(-1);
-			lastChange = System.currentTimeMillis();
+				break;
+			default:
+				Util.log(this, "got data from "+(char)sender+":" +new String(data) );
 		}
 	}
-
 
 
 	private void open() {
@@ -163,11 +179,19 @@ public class SerialInput extends Thread implements EventSource {
 		}
 	}
 
+	synchronized void sendRaw(String data) throws IOException {
+		Util.log(this, "sendRaw: sending "+data);
+		out.write(data.getBytes());
+	}
+	synchronized void sendRaw(byte[] data) throws IOException {
+		Util.log(this, "sendRaw: sending "+Arrays.toString(data));
+		out.write(data);
+	}
 	synchronized void sendCommand(byte target, byte[] data) throws IOException {
 		Util.log(this, "sendCommand: sending command "+Arrays.toString(data)+" to "+target);
 		out.write(PACK_DAT);
 		out.write(target);
-		out.write(data.length);
+		out.write(data.length + '0');
 		out.write(data);
 	}
 
