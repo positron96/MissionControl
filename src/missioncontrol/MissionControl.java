@@ -6,17 +6,13 @@
 
 package missioncontrol;
 
-import missioncontrol.pipeline.EventSource;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
-import missioncontrol.pipeline.Event;
 import missioncontrol.pipeline.EventPipeline;
 
 /**
@@ -31,8 +27,8 @@ public class MissionControl {
 
 	private SpeechGenerator speech;
 
-	SerialInput spp;
-	PipeInput pin;
+	final SerialInput spp;
+	final PipeInput pin;
 
 	Properties currentState = new Properties();
 	private static final String STATE_FILE = "missionstate.properties";
@@ -42,9 +38,9 @@ public class MissionControl {
 		Runtime.getRuntime().addShutdownHook ( shutdownHook );
 
 		try {
-			//System.getProperties().
 			Properties pp = new Properties();
 			pp.load( new FileReader( SETTINGS_FILE ) );
+			pp.putAll(System.getProperties());
 			System.getProperties().putAll(pp);
 		} catch(IOException e) {
 			Util.log(this, "Could not load settings: "+e);
@@ -63,7 +59,7 @@ public class MissionControl {
 		pipeline.registerSource( pin );
 		pipeline.registerSource( spp );
 		pipeline.registerSource( new TimeEventSource(this) );
-		pipeline.registerSource( new IRControlLauncher() );
+		pipeline.registerSource( new IRControlLauncher(this) );
 
 		speech = new SpeechGenerator(this, pipeline);
 		speech.speak("Hello");
@@ -75,17 +71,20 @@ public class MissionControl {
 	public void work() {
 		pipeline.start();
 
-		Thread console  = new Thread() {
+		Thread console  = new Thread("") {
+			@Override
 			public void run() {
 
 				BufferedReader rd = new BufferedReader(new InputStreamReader(System.in) );
 				while(true) {
 					try {
+						System.out.print(">");
 						String s = rd.readLine();
 						if(s==null) {
 							Util.log(this, "stdin closed, not listening");
 							break;
 						}
+						if(s.length()==0) {continue;}
 						try {
 							pin.insertMessage(s);
 						} catch(RuntimeException e) {
