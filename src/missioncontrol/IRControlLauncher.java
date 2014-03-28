@@ -18,19 +18,44 @@ import missioncontrol.pipeline.EventSource;
 public class IRControlLauncher implements EventSource {
 
 	private static final String SETTING_FILE = "ircontrol.file";
-	private final File ff;
+	private final File irrecvFile;
 	private Process process;
+	private Thread waiter;
+	private MissionControl engine;
 
-	public IRControlLauncher() {
-		ff = new File(System.getProperty(SETTING_FILE, "irrecv"));
+	public IRControlLauncher(MissionControl engine) {
+		irrecvFile = new File(System.getProperty(SETTING_FILE, "irrecv"));
+		this.engine = engine;
 	}
 
 	@Override
 	public void start() {
+		String pids = Util.popenAsString( new String[]{"pgrep", irrecvFile.getName()}, true );
+		if(pids!=null && pids.length() != 0) {
+			Util.log(this, "irrecv seems to be running already, not starting");
+			process=null;
+			return;
+		}
 		try {
-			ProcessBuilder pb=new ProcessBuilder(ff.getCanonicalPath());
+			ProcessBuilder pb=new ProcessBuilder(
+					irrecvFile.getCanonicalPath(),
+					engine.pin.pipeFile.getCanonicalPath());
 			pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+			pb.redirectError(ProcessBuilder.Redirect.INHERIT);
 			process = pb.start();
+			waiter = new Thread("irrecv waiter thread") {
+				@Override
+				public void run() {
+					try {
+						int res = process.waitFor();
+						Util.log(IRControlLauncher.this, "irrecv exitted with status "+res);
+					} catch(InterruptedException e) {
+						Util.log(IRControlLauncher.this, "irrecv waiter interrupted");
+					}
+				}
+			};
+			waiter.setDaemon(true);
+			waiter.start();
 			Util.log(this, "irrecv started successfully");
 		} catch (IOException ex) {
 			//ex.printStackTrace();
@@ -44,6 +69,8 @@ public class IRControlLauncher implements EventSource {
 			Util.log(this, "Terminating irrecv");
 			process.destroy();
 		}
+		if(waiter!=null)
+			waiter.interrupt();
 	}
 
 	@Override
