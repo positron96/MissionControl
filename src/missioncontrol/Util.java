@@ -32,7 +32,11 @@ public class Util {
 		return sdf.format(dd);
 	}
 
-	public static String popenAsString(String ... args) {
+	public static String popenAsString(String... args) {
+		return popenAsString(args, false);
+	}
+	
+	public static String popenAsString(String[] args, boolean suppressExitError) {
 		ProcessBuilder pb = new ProcessBuilder(args);
 		try {
 			Process p = pb.start();
@@ -44,7 +48,7 @@ public class Util {
 				bb.append("\n");
 			}
 			int er = p.waitFor();
-			if(er!= 0) throw new RuntimeException("child process retuned "+er);
+			if(er!= 0 && !suppressExitError) throw new RuntimeException("child process retuned "+er);
 			return bb.toString();
 		}catch(IOException e) {
 			Util.log("Util", "Could not exec: "+e);
