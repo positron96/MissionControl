@@ -10,13 +10,8 @@ package missioncontrol.pipeline;
  *
  * @author positron
  */
-public interface EventSource extends Terminatable {
+public interface Terminatable {
 
-	public void setEventPipeline(EventPipeline ss) ;
-
-	public void start();
-
-	@Override
 	public void terminate();
 
 }

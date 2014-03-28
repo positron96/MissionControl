@@ -17,21 +17,26 @@ import java.util.Locale;
 import missioncontrol.pipeline.Event;
 import missioncontrol.pipeline.EventListener;
 import missioncontrol.pipeline.EventPipeline;
+import missioncontrol.pipeline.Terminatable;
 
 /**
  *
  * @author positron
  */
-public class SpeechGenerator implements EventListener {
+public class SpeechGenerator implements EventListener, Terminatable {
 
 	private MissionControl engine;
 	private boolean muted = false;
+	private boolean verbose = false;
+
+	public static final String SETTING_VERBOSE = "speech.verbose";
 
 	public static final String EVENT_SPEAK = "speech.*";
 
 	public SpeechGenerator(MissionControl engine, EventPipeline pipeline) {
 		this.engine = engine;
 		pipeline.registerListener(this, EVENT_SPEAK);
+		verbose = Boolean.parseBoolean( engine.currentState.getProperty(SETTING_VERBOSE, "false") );
 		Util.speech = this;
 	}
 
@@ -48,6 +53,9 @@ public class SpeechGenerator implements EventListener {
 	}
 
 	public synchronized void speak(String s, String lang) {
+		if(verbose) {
+			Util.log(this, "speak: "+s);
+		}
 		if(!muted) {
 			try {
 				InputStream in = null;
@@ -104,7 +112,11 @@ public class SpeechGenerator implements EventListener {
 	@Override
 	public void processEvent(Event e) {
 		if(e.type == EVENT_SPEAK) {
-			switch(e.subType) {
+			switch(e.subType.toUpperCase()) {
+				case "VERBOSE":
+					if(((String)e.data).length()==0) verbose = true;
+					else verbose = e.data.equals("1");
+					break;
 				case "MUTE":
 					mute();
 					break;
@@ -112,16 +124,21 @@ public class SpeechGenerator implements EventListener {
 					unmute();
 					break;
 				case "DO":
-				case "SPEEK":
+				case "SPEAK":
 					speak((String)e.data);
 					break;
 				default:
-					speak(e.subType);
+					speak(e.subType+" "+(String)e.data);
 					break;
 			}
 
 
 		}
+	}
+
+	@Override
+	public void terminate() {
+		engine.currentState.setProperty(SETTING_VERBOSE, Boolean.toString(verbose));
 	}
 
 }

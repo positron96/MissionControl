@@ -29,6 +29,7 @@ public class EventPipeline extends Thread {
 	private final BlockingQueue<Event> queue;
 
 	public EventPipeline() {
+		super("Event pipeline");
 		queue = new LinkedBlockingQueue<>();
 	}
 
@@ -92,6 +93,11 @@ public class EventPipeline extends Thread {
 					Util.log(this, "Normal interrupt sequence for "+ e+" interrupted by "+ex);
 				}
 		}
+		Set<EventListener> full = new HashSet<>();
+		for(Set<EventListener> e: listeners.values()) 
+			full.addAll(e);
+		for(EventListener l: full)
+			if(l instanceof Terminatable) ((Terminatable)l).terminate();
 		interrupt();
 	}
 
