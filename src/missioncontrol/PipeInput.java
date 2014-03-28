@@ -1,6 +1,6 @@
 /*
  * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
+ * To change this template pipeFile, choose Tools | Templates
  * and open the template in the editor.
  */
 package missioncontrol;
@@ -27,12 +27,13 @@ public class PipeInput extends Thread implements EventSource {
 	private final MissionControl engine;
 	private EventPipeline sink;
 	//private SerialPort spp;
-	private File file;
+	public final File pipeFile;
 	private FileChannel fin = null;
 
 	public PipeInput(MissionControl engine) {
 		super("PipeInput Thread");
 		this.engine = engine;
+		pipeFile = new File(System.getProperty("pipe.file", "missioninput"));
 	}
 
 	@Override
@@ -43,12 +44,11 @@ public class PipeInput extends Thread implements EventSource {
 
 	private void open() {
 		try {
-			file = new File(System.getProperty("pipe.file", "missioninput"));
-			Util.log(this,"open(): pipe file is " + file.getAbsolutePath());
-			if (!file.exists()) {
+			Util.log(this,"open(): pipe file is " + pipeFile.getCanonicalPath() );
+			if (!pipeFile.exists()) {
 				try {
 					// mkpipe
-					Process p = Runtime.getRuntime().exec(new String[]{"mkfifo", file.getAbsolutePath()});
+					Process p = Runtime.getRuntime().exec(new String[]{"mkfifo", pipeFile.getAbsolutePath()});
 					p.waitFor();
 					Util.log(this, "open(): created pipe");
 				} catch (IOException e) {
@@ -69,21 +69,30 @@ public class PipeInput extends Thread implements EventSource {
 		open();
 		try {
 			while (!isInterrupted()) {
-				//fin = new FileInputStream(file).getChannel();
-				BufferedReader in = new BufferedReader( new FileReader(file) );//new InputStreamReader( Channels.newInputStream(fin) )  );
+				//fin = new FileInputStream(pipeFile).getChannel();
+				//Util.log(this, System.currentTimeMillis()+ "ms: pipe opening");
+				BufferedReader in = new BufferedReader( new FileReader(pipeFile) );
 				try {
-					while (in.ready() && !isInterrupted()) {
-						processMessage(in.readLine());
+					while (!isInterrupted()) {
+						String s = in.readLine();
+						if(s==null) {/*Util.log(this, System.currentTimeMillis()+ "ms: read null");*/break;}
+						//Util.log(this, System.currentTimeMillis()+ "ms: got "+s.length()+" bytes");
+						processMessage(s);
 					}
 					in.close();
+					//Util.log(this, System.currentTimeMillis()+ "ms: pipe closed");
 				} catch (IOException ex) {
 					ex.printStackTrace();
 				}
 			}
-			Util.log(this,"run(): graceful exit");
-			if(file.exists()) file.delete();
 		} catch (FileNotFoundException e) {
 			Util.log(this, "pipe not found, quitting");
+		}
+		Util.log(this,"run(): quitting");
+		try {
+			if(pipeFile.exists()) pipeFile.delete();
+		} catch(Exception e) {
+			Util.log(this, "could not delete pipe: "+e);
 		}
 		synchronized (this) {
 			this.notifyAll();
@@ -94,13 +103,13 @@ public class PipeInput extends Thread implements EventSource {
 	@Override
 	public void terminate() {
 		this.interrupt();
-		if(file.exists())
+		if(pipeFile.exists())
 			try {
-				FileWriter f = new FileWriter(file);
+				FileWriter f = new FileWriter(pipeFile);
 				f.write("PIPE. term");
 				f.close();
 			} catch(IOException e) {
-
+				//Util.log(this, "could not write close command to pipe: "+e);
 			}
 		/*if(fin!=null) try {
 			fin.close();
@@ -117,15 +126,25 @@ public class PipeInput extends Thread implements EventSource {
 	private synchronized void processMessage(String msg) {
 		//msg = msg.trim();
 		//Util.log(this, "got message: "+msg);
-		StringTokenizer st= new StringTokenizer(msg, ".");
-		String src = st.nextToken().toUpperCase().trim();
-		String arg = st.hasMoreElements() ? st.nextToken().trim() : "";
-		int p = arg.indexOf(' ');
+		int p, p1;
+		p = msg.indexOf(".");
+		p1 = msg.indexOf(" ");
+		if(p1==-1 && p==-1) p=-1; else
+		if(p==-1) p=p1; else
+		if(p1==-1) p=p; else
+			p = Math.min(p,p1);
+
+		String src = p!=-1 ? msg.substring(0,p) : msg;
+		src = src.toUpperCase().trim();
+		String arg = p!=-1 ? msg.substring(p+1).trim() : "";
+		p = arg.indexOf(' ');
 		String arg1 = p!=-1 ? arg.substring(0, p).trim() : arg;
 		String arg2 = p!=-1 ? arg.substring(p).trim() : "";
-		Util.log(this, "got message: "+src+"."+arg);
+		Util.log(this, "got message: "+src+" "+arg);
 		switch (src) {
 			case "Q":
+			case "QUIT":
+			case "EXIT":
 				sink.pumpEvent(Event.SHUTDOWN_EVENT);
 				break;
 			case "IR" :
@@ -146,14 +165,31 @@ public class PipeInput extends Thread implements EventSource {
 					//engine.lightController.flip(true, );
 				}
 				break;
+			case "SPEAK":
+				sink.pumpEvent( new Event(SpeechGenerator.EVENT_SPEAK, "SPEAK", arg, this) );
+				break;
 			case "SPEECH":
-				sink.pumpEvent( new Event(SpeechGenerator.EVENT_SPEAK, arg1.toUpperCase(), arg2, this) );
+				sink.pumpEvent( new Event(SpeechGenerator.EVENT_SPEAK, arg1, arg2, this) );
 				break;
 			case "LIGHT":
 				sink.pumpEvent( new Event(LightController.EVENT_PRINT_STATUS, this) );
 				break;
 			case "PEOPLE":
 				sink.pumpEvent( Event.PeopleCounterEvent.createPeopleCount(Integer.parseInt(arg), "", this));
+				break;
+			case "SEND":
+				try {
+					engine.spp.sendCommand((byte)arg1.charAt(0), arg2.getBytes() );
+				}catch(IOException e) {
+					e.printStackTrace();
+				}
+				break;
+			case "SENDRAW":
+				try {
+					engine.spp.sendRaw(arg);
+				}catch(IOException e) {
+					e.printStackTrace();
+				}
 				break;
 			case "PIPE":
 				if(arg.toUpperCase().equals("TERM")) {}
