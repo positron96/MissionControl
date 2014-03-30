@@ -16,7 +16,4 @@ public interface EventSource extends Terminatable {
 
 	public void start();
 
-	@Override
-	public void terminate();
-
 }

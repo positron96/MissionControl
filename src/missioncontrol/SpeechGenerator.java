@@ -9,7 +9,6 @@ package missioncontrol;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -112,7 +111,9 @@ public class SpeechGenerator implements EventListener, Terminatable {
 	@Override
 	public void processEvent(Event e) {
 		if(e.type == EVENT_SPEAK) {
-			switch(e.subType.toUpperCase()) {
+			String subtype = e.subType;
+			if(subtype == null) subtype="speak";
+			switch(subtype.toUpperCase()) {
 				case "VERBOSE":
 					if(((String)e.data).length()==0) verbose = true;
 					else verbose = e.data.equals("1");

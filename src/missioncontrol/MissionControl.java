@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Properties;
+import missioncontrol.pipeline.Event;
 import missioncontrol.pipeline.EventPipeline;
 
 /**
@@ -66,6 +67,10 @@ public class MissionControl {
 
 
 		lightController = new LightController(this, pipeline);
+	}
+
+	public void speek(String s) {
+		pipeline.pumpEvent( Event.createWithData(SpeechGenerator.EVENT_SPEAK, s, null));
 	}
 
 	public void work() {

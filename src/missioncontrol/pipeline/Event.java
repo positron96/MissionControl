@@ -24,11 +24,12 @@ public class Event {
 
 	private final EventSource source;
 
+	public static Event createWithData(String type, Object data, EventSource src) {
+		return new Event(type, null, data, src);
+	}
+
 	public Event(String type, EventSource src) {
 		this(type, null, null, src);
-	}
-	public Event(String type, Object data, EventSource src) {
-		this(type, null, data, src);
 	}
 	public Event(String type, String subtype, EventSource src) {
 		this(type, subtype, null, src);
@@ -61,7 +62,7 @@ public class Event {
 		public final int count;
 
 		private PeopleCounterEvent(int inc, int count, String msg, EventSource es) {
-			super(EVENT_PEOPLE_COUNTER, (Object)msg, es);
+			super(EVENT_PEOPLE_COUNTER, null, (Object)msg, es);
 			//setMessage(msg);
 			this.increment = inc;
 			this.count = count;
@@ -79,7 +80,7 @@ public class Event {
 		public final State state;
 		public final boolean manual;
 		public LightEvent(State ss, String msg, EventSource es) {
-			super(EVENT_USER_LIGHT, (Object)msg, es);
+			super(EVENT_USER_LIGHT, null, (Object)msg, es);
 			//setMessage(msg);
 			state = ss;
 			manual = true;
