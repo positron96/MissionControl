@@ -132,7 +132,7 @@ public class LightController implements EventListener {
 	public void setPeople(int ppl) {
 		if(ppl<0) ppl=0;
 		Util.log(this, "setPeople("+ppl+")");
-		engine.speek(ppl==1 ? "1 person inside." : ppl+" people inside.");
+		engine.speek("There "+(ppl==1 ? "is 1 person" : "are "+ppl+" people")+ " inside.");
 		int lastPeople = cPeople;
 		cPeople = ppl;
 
