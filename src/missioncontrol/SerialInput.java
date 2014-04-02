@@ -98,9 +98,8 @@ public class SerialInput extends Thread implements EventSource {
 			} catch(IOException e) {
 				if(!interrupted()) e.printStackTrace();
 				break;
-			}
-			synchronized (this) {
-				this.notifyAll();
+			} catch(Exception e) {
+				Util.log(this, "Got exception: "+e+" at "+e.getStackTrace()[0] );
 			}
 		}
 
@@ -109,6 +108,9 @@ public class SerialInput extends Thread implements EventSource {
 			sock.close();
 		}catch(IOException e) {
 			e.printStackTrace();
+		}
+		synchronized (this) {
+			this.notifyAll();
 		}
 	}
 
