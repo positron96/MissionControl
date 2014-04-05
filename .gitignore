@@ -8,3 +8,5 @@
 /dist
 /nbproject/private
 /missionstate.properties
+/missioninput
+/missioncontrol.properties
