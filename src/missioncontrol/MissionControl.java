@@ -63,20 +63,22 @@ public class MissionControl {
 		pipeline.registerSource( new IRControlLauncher(this) );
 
 		speech = new SpeechGenerator(this, pipeline);
-		speech.speak("Hello");
 
+		pipeline.registerSource(new InetListener(this) );
+		//inet.start();
 
 		lightController = new LightController(this, pipeline);
 	}
 
-	public void speek(String s) {
+	public void speak(String s) {
 		pipeline.pumpEvent( Event.createWithData(SpeechGenerator.EVENT_SPEAK, s, null));
 	}
 
 	public void work() {
 		pipeline.start();
+		speak("Hello");
 
-		Thread console  = new Thread("") {
+		Thread console  = new Thread("Console reader") {
 			@Override
 			public void run() {
 
