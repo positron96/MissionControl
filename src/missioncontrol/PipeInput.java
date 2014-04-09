@@ -89,11 +89,9 @@ public class PipeInput extends Thread implements EventSource {
 			Util.log(this, "pipe not found, quitting");
 		}
 		Util.log(this,"run(): quitting");
-		try {
-			if(pipeFile.exists()) pipeFile.delete();
-		} catch(Exception e) {
-			Util.log(this, "could not delete pipe: "+e);
-		}
+		if(pipeFile.exists() && pipeFile.delete() ) {}
+		else Util.log(this, "could not delete pipe");
+
 		synchronized (this) {
 			this.notifyAll();
 		}
@@ -111,6 +109,7 @@ public class PipeInput extends Thread implements EventSource {
 			} catch(IOException e) {
 				//Util.log(this, "could not write close command to pipe: "+e);
 			}
+		else {Util.log(this, "WTF?? Pipe is deleted");}
 		/*if(fin!=null) try {
 			fin.close();
 		} catch (IOException ex) {

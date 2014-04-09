@@ -132,7 +132,7 @@ public class LightController implements EventListener {
 	public void setPeople(int ppl) {
 		if(ppl<0) ppl=0;
 		Util.log(this, "setPeople("+ppl+")");
-		engine.speek("There "+(ppl==1 ? "is 1 person" : "are "+ppl+" people")+ " inside.");
+		engine.speak("There "+(ppl==1 ? "is 1 person" : "are "+ppl+" people")+ " inside.");
 		int lastPeople = cPeople;
 		cPeople = ppl;
 
@@ -183,10 +183,10 @@ public class LightController implements EventListener {
 				case SWITCH: flip(le.manual, le.getMessage() ); break;
 			}
 		} else
-		if(e.type == Event.EVENT_TIME) {
+		if(Event.EVENT_TIME.equals(e.type)) {
 			updateDaytime( (Calendar)e.data );
 		} else
-		if(e.type == EVENT_PRINT_STATUS) {
+		if(EVENT_PRINT_STATUS.equals(e.type)) {
 			Util.log(this, "Light state = "+getState() );
 		}
 

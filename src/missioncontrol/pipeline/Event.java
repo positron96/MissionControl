@@ -54,6 +54,11 @@ public class Event {
 		return (String)data;
 	}
 
+	@Override
+	public String toString() {
+		return "Event{" + "type=" + type + ", subType=" + subType + ", data=" + data + ", source=" + source + '}';
+	}
+
 	public static final String SHUTDOWN_EVENT_TYPE = "system.shutdown";
 	public static final Event SHUTDOWN_EVENT = new Event(SHUTDOWN_EVENT_TYPE, null);
 

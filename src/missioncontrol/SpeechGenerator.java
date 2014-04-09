@@ -110,7 +110,7 @@ public class SpeechGenerator implements EventListener, Terminatable {
 
 	@Override
 	public void processEvent(Event e) {
-		if(e.type == EVENT_SPEAK) {
+		if(EVENT_SPEAK.equals(e.type)) {
 			String subtype = e.subType;
 			if(subtype == null) subtype="speak";
 			switch(subtype.toUpperCase()) {
